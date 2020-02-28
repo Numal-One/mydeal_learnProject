@@ -1,9 +1,12 @@
 
 
+
 <?php
 // если массив с ошибками есть, то обрабатываем его
 $errorNameClass = isset($formErrors['name']) ? 'form__input--error' : '';
 $errorProjectClass = isset($formErrors['project']) ? 'form__input--error' : '';
+
+
 ?>
 
 <div class="content">
