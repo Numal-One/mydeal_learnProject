@@ -2,6 +2,7 @@ INSERT INTO user(
     name, email, password)
     VALUES
     ('Василий', 'vasya@mail.com', 'vasyapass'),
+    ('node', 'node@mail.com', '$2y$10$NIU0Bo2KufkqmiDuFK4V0OCWxI9YYLhgBSHCE4Mk2.c8o4jMYolba'),
     ('Александр', 'alex@mail.com', 'alexpass');
 
 INSERT INTO project(name, user_id)

@@ -1,7 +1,18 @@
+<?php
+$searchValue = $_GET['search'] ?? '';
+
+// если выбрана вкладка фильтра по датам, то меняем параметры в ссылке
+$taskFilterStr = '';
+if($taskFilter != 1){
+    $taskFilterStr = '&taskFilter='.$taskFilter;
+}
+?>
+
+
+
 <div class="content">
     <section class="content__side">
         <h2 class="content__side-heading">Проекты</h2>
-
         <nav class="main-navigation">
             <ul class="main-navigation__list">
             <?php
@@ -16,7 +27,7 @@
                     }
 
                     echo '">
-                        <a class="main-navigation__list-item-link" href="index.php?projectid='.$project['id'].'">'.$project['name'].'</a>
+                        <a class="main-navigation__list-item-link" href="index.php?projectid='.$project['id'].$taskFilterStr.'">'.$project['name'].'</a>
                         <span class="main-navigation__list-item-count">'.projectsInTaskListCount($taskList, $project['name']).'</span>
                     </li>
                     ';
@@ -27,24 +38,31 @@
         </nav>
 
         <a class="button button--transparent button--plus content__side-button"
-        href="pages/form-project.html" target="project_add">Добавить проект</a>
+        href="addproject.php" target="project_add">Добавить проект</a>
     </section>
 
     <main class="content__main">
         <h2 class="content__main-heading">Список задач</h2>
 
-        <form class="search-form" action="index.php" method="post" autocomplete="off">
-            <input class="search-form__input" type="text" name="" value="" placeholder="Поиск по задачам">
+        <form class="search-form" action="index.php" method="get" autocomplete="off">
+            <input class="search-form__input" type="text" name="search" value="<?=$searchValue?>" placeholder="Поиск по задачам">
 
             <input class="search-form__submit" type="submit" name="" value="Искать">
         </form>
 
+        <?php
+            // если выбран пункт в фильтре проектов, то меняем гет параметры в ссылках
+            $projectIdFilter = '';
+            if(isset($_GET['projectid'])){
+                $projectIdFilter = '&projectid='.$_GET['projectid'];
+            }
+        ?>
         <div class="tasks-controls">
             <nav class="tasks-switch">
-                <a href="/" class="tasks-switch__item tasks-switch__item--active">Все задачи</a>
-                <a href="/" class="tasks-switch__item">Повестка дня</a>
-                <a href="/" class="tasks-switch__item">Завтра</a>
-                <a href="/" class="tasks-switch__item">Просроченные</a>
+                <a href="/index.php?taskFilter=1<?=$projectIdFilter?>" class="tasks-switch__item <?php if($taskFilter == 1) echo 'tasks-switch__item--active ';?>">Все задачи</a>
+                <a href="/index.php?taskFilter=2<?=$projectIdFilter?>" class="tasks-switch__item <?php if($taskFilter == 2) echo 'tasks-switch__item--active ';?>">Повестка дня</a>
+                <a href="/index.php?taskFilter=3<?=$projectIdFilter?>" class="tasks-switch__item <?php if($taskFilter == 3) echo 'tasks-switch__item--active ';?>">Завтра</a>
+                <a href="/index.php?taskFilter=4<?=$projectIdFilter?>" class="tasks-switch__item <?php if($taskFilter == 4) echo 'tasks-switch__item--active ';?>">Просроченные</a>
             </nav>
 
             <label class="checkbox">
@@ -76,10 +94,12 @@
                 // проверка корректности id проекта, указанного в параметре запроса
                 if ( $projectIdIsset && !projectIdCheck($activeProjectId, $projectList)){
                     echo '404. Page not found';
+                } elseif (empty($taskList) && $searchValue){
+                    echo 'По вашему запросу ничего не найдено';
                 } else {
                     foreach ($taskList as $task) {
                         // далее идет код для фильтра дел по категориям
-                        if ( $projectIdIsset && $activeProjectId !== $task['categiryId']){
+                        if ( $projectIdIsset && $activeProjectId !== $task['categoryId'] || !deadlineFilter($task['deadline'], $taskFilter)){
                             continue;
                         }
 
@@ -94,11 +114,13 @@
                                 echo ' task--completed';
                             }
 
-                            if ($deadLineIsComing <= 24 && $deadLineIsComing > 0) {
+                            if ($deadLineIsComing < 24 && $deadLineIsComing >= 0 && !$task['isComplete'] && $deadLineIsComing !== 'noDeadline') {
                                 echo ' task--important';
                             }
 
                             echo '">
+                                <td> <a class="button button--done-project"
+                                href="/index.php?taskComplete='.$task['taskId'].'" target="project_add">&#9745;</a></td>
                                 <td class="task__select">
                                     <label class="checkbox task__checkbox">
                                         <input class="checkbox__input visually-hidden task__checkbox" type="checkbox" value="1">
@@ -106,9 +128,16 @@
                                     </label>
                                 </td>
 
-                                <td class="task__file">
-                                <a class="download-link" href="#"></a>
-                                </td>
+                                <td class="task__file">';
+
+                                if(isset($task['file'])){
+                                    echo '<a class="download-link" href="';
+                                    echo $task['file'];
+                                    echo '" download></a>';
+                                    
+                                }
+                                
+                                echo '</td>
 
                                 <td class="task__date">';
                                 // не удержался и прикрутил сообщение, если просрал дедлайн

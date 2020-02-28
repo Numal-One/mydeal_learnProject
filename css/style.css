@@ -158,6 +158,30 @@ a:focus {
   background-color: transparent;
 }
 
+
+
+.button--done-project {
+  display: inline-block;
+  max-width: 30px;
+  padding: 10px 0;
+
+  background-color: #3bb42b;
+}
+
+.task--completed .button--done-project {
+  display: inline-block;
+  max-width: 30px;
+  padding: 10px 0;
+
+  background-color: #aaaaaa;
+}
+
+.task--completed .button--done-project:hover,
+.task--completed .button--done-project:active,
+.task--completed .button--done-project:focus{
+  background-color: #aaaaaa;
+}
+
 .overlay::after {
   content: "";
   position: fixed;
@@ -723,6 +747,8 @@ a:focus {
   border-color: #f84646;
 }
 
+
+
 .form__input--select {
   background: #ffffff url("../img/dropdown.svg") right 20px top 50% no-repeat;
 }
@@ -770,4 +796,12 @@ a:focus {
 
 .welcome__text p {
   margin: 20px 0;
+}
+
+
+td a.task-done{
+  color: grey;
+  text-decoration: none;
+  background-color: red;
+  border-radius:10px;
 }

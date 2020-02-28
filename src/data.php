@@ -1,62 +1,168 @@
 <?php
+// авторизован ли пользователь
+$isAuthorized = isset($_SESSION['currentUser']) ? TRUE : FALSE;
+
+
 // показывать или нет выполненные задачи
 $show_complete_tasks = rand(0, 1);
 
-$pageName = 'Дела в порядке';
-
-$userEmail = 'vasya@mail.com';
-
-
-$con = mysqli_connect('localhost', 'root', '','mydealsDB');
-// д
-// $con = mysqli_connect('localhost', 'u0857553_root', 'U0l7D5q1','u0857553_mydealsdb');
-
-if(!$con) {
-    echo 'Ошибка подключения к MySQL '. mysqli_connect_error();
+// фильтр задач
+if(isset($_GET['taskFilter']) && $_GET['taskFilter'] > 0 && $_GET['taskFilter'] < 5) {
+  $taskFilter = $_GET['taskFilter'];
+  // header("Location: index.php");
+} else {
+  $taskFilter = 1;
 }
 
-mysqli_set_charset($con, 'utf8');
+// для локального
+$bdConnectData = array(
+  'bd_path' => 'localhost',
+  'bd_user' => 'root',
+  'bd_pass' => '',
+  'bd_name' => 'mydealsDB'
+);
+
+// для сайта
+// $bdConnectData = array(
+//   'bd_path' => 'localhost',
+//   'bd_user' => 'u0857553_root',
+//   'bd_pass' => 'U0l7D5q1',
+//   'bd_name' => 'u0857553_mydealsdb'
+// );
+
+// если не авторизован пользователь, то...
+$currentUser = array(
+  'id' => '',
+  'name' => 'Гость',
+  'email' => '',
+  'password' => '',
+  'reg_date' => ''
+);
+
+$projectList = [];
+$taskList = [];
 
 
-// запрос данных пользователя
-$sqlRes = mysqli_query($con, "SELECT `id`, `name`, `email` FROM `user` WHERE email = '".$userEmail."' ");
-$userData = mysqli_fetch_all($sqlRes, MYSQLI_ASSOC);
-$userName = $userData[0]['name'];
-$userId = $userData[0]['id'];
 
-// запрос списка проектов
-$sqlRes = mysqli_query($con, 'SELECT `id`, `name` FROM `project` WHERE `user_id` = '.$userId.' ORDER BY `name` ');
-$projectList = mysqli_fetch_all($sqlRes, MYSQLI_ASSOC);
+if ($isAuthorized) {
+  $currentUser = $_SESSION['currentUser'];
 
-// запрос списка задач
-$sqlRes = mysqli_query($con, 
-"SELECT project.id AS categiryId, task.name, task.deadline, project.name AS category, task.status AS isComplete 
+  $con = mysqli_connect($bdConnectData['bd_path'], $bdConnectData['bd_user'], $bdConnectData['bd_pass'], $bdConnectData['bd_name']);
+
+  if(!$con) {
+      echo 'Ошибка подключения к MySQL '. mysqli_connect_error();
+  }
+
+  mysqli_set_charset($con, 'utf8');
+  // запрос списка проектов
+  
+  $sqlRes = mysqli_query($con, 'SELECT `id`, `name` FROM `project` WHERE `user_id` = '.$currentUser['id'].' ORDER BY `name` ');
+  $projectList = mysqli_fetch_all($sqlRes, MYSQLI_ASSOC);
+  
+  // запрос списка задач
+  $sqlSearchAdd = '';
+  $searchKey = '';
+  if(isset($_GET['search'])){
+    $searchKey = $_GET['search'];
+    $sqlSearchAdd = " AND MATCH (task.name) AGAINST ('".$searchKey."')";
+  } 
+
+  $sqlQuery = "SELECT project.id AS categoryId, task.id AS taskId, task.name, task.deadline, project.name AS category, task.status AS isComplete, task.file AS `file`
     FROM `task` 
     JOIN `project` ON task.project_id = project.id 
-    WHERE task.user_id = '".$userId."' 
-    ORDER BY task.name");
+    WHERE task.user_id = '".$currentUser['id']."'".$sqlSearchAdd." 
+    ORDER BY task.status ASC, task.name ASC";
 
-$taskList = mysqli_fetch_all($sqlRes, MYSQLI_ASSOC);
+  $sqlRes = mysqli_query($con, $sqlQuery);
+  
+  $taskList = mysqli_fetch_all($sqlRes, MYSQLI_ASSOC);
+  
+  mysqli_close($con);
+}
+
 
 $pages = array(
   'index' => array(
     'url_key' => '/index.php',
     'tpl' => 'main.php',
-    'title' => 'Главная страница',
     'vars' => array(
+      'pageTitle' => 'Главная страница',
       'show_complete_tasks' => $show_complete_tasks, 
       'projectList' => $projectList, 
-      'taskList' => $taskList
+      'taskList' => $taskList,
+      'currentUser' => $currentUser,
+      'bdConnectData' => $bdConnectData,
+      'taskFilter' => $taskFilter
     )
   ),
   'add' => array(
     'url_key' => '/add.php',
     'tpl' => 'add.php',
-    'title' => 'Добавить задачу',
     'vars' => array(
+      'pageTitle' => 'Добавить задачу',
       'show_complete_tasks' => $show_complete_tasks, 
       'projectList' => $projectList, 
-      'taskList' => $taskList
+      'taskList' => $taskList,
+      'bdConnectData' => $bdConnectData,
+      'currentUser' => $currentUser
+    )
+  ),
+  'registration' => array(
+    'url_key' => '/registration.php',
+    'tpl' => 'registration.php',
+    'vars' => array(
+      'bdConnectData' => $bdConnectData,
+      'pageTitle' => 'Регистрация',
+      
+    )
+  ),
+  'authorization' => array(
+    'url_key' => '/authorization.php',
+    'tpl' => 'authorization.php',
+    'vars' => array(
+      'bdConnectData' => $bdConnectData,
+      'pageTitle' => 'Авторизация',
+      
+    )
+  ),
+  'guest' => array(
+    'url_key' => '/guest.php',
+    'tpl' => 'guest.php',
+    'vars' => array(
+      'bdConnectData' => $bdConnectData,
+      'pageTitle' => 'Гость',
+      
+    )
+  ),
+  'logout' => array(
+    'url_key' => '/logout.php',
+    'tpl' => 'logout.php',
+    'vars' => array(
+      'bdConnectData' => $bdConnectData,
+      'pageTitle' => 'Logout',
+      
+    )
+  ),
+  'addproject' => array(
+    'url_key' => '/addproject.php',
+    'tpl' => 'addproject.php',
+    'vars' => array(
+      'pageTitle' => 'addproject',
+      'projectList' => $projectList, 
+      'taskList' => $taskList,
+      'bdConnectData' => $bdConnectData,
+      'currentUser' => $currentUser
+    )
+  ),
+  'sendmail' => array(
+    'url_key' => '/sendmail.php',
+    'tpl' => 'sendmail.php',
+    'vars' => array(
+      'pageTitle' => 'sendmail',
+      'projectList' => $projectList, 
+      'taskList' => $taskList,
+      'bdConnectData' => $bdConnectData,
+      'currentUser' => $currentUser
     )
   )
 ); 
@@ -106,4 +212,3 @@ $pages = array(
 
 
 ?>
-

@@ -1,3 +1,13 @@
+<?php
+$isAuthorized = isset($_SESSION['currentUser']) ? TRUE : FALSE;
+
+$body_bg_image_class = $isAuthorized ? '' : 'body-background';
+$container_with_sidebar_class = $isAuthorized ? 'container--with-sidebar' : '';
+
+
+
+?>
+
 <!DOCTYPE html>
 <html lang="ru">
 
@@ -5,15 +15,15 @@
     <meta charset="UTF-8">
     <title><?=$pageName?></title>
     <link rel="stylesheet" href="css/normalize.css">
-    <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/flatpickr.min.css">
+    <link rel="stylesheet" href="css/style.css">
 </head>
 
-<body>
+<body class="<?= $body_bg_image_class?>">
 <h1 class="visually-hidden">Дела в порядке</h1>
 
 <div class="page-wrapper">
-    <div class="container container--with-sidebar">
+    <div class="container <?= $container_with_sidebar_class?>">
     
         <header class="main-header">
             <a href="/">
@@ -21,15 +31,26 @@
             </a>
 
             <div class="main-header__side">
-                <a class="main-header__side-item button button--plus open-modal" href="add.php">Добавить задачу</a>
+               <?php
+                if($isAuthorized){
+                    echo '
+                    <a class="main-header__side-item button button--plus open-modal" href="add.php">Добавить задачу</a>
+                    <a class="main-header__side-item button" href="sendmail.php">Отправить почту</a>
 
-                <div class="main-header__side-item user-menu">
-                    <div class="user-menu__data">
-                        <p><?=$userName?></p>
-
-                        <a href="#">Выйти</a>
-                    </div>
-                </div>
+                    <div class="main-header__side-item user-menu">
+                        <div class="user-menu__data">
+                            <p>'.$currentUser['name'].'</p>
+                            <a href="logout.php">Выйти</a>
+                        </div>
+                     </div>
+                    ';
+                } else {
+                    echo '
+                    <a class="main-header__side-item button button--transparent" href="authorization.php">Войти</a>
+                    ';
+                }
+               ?>
+                
             </div>
         </header>
 
@@ -46,8 +67,14 @@
 
             <p>Веб-приложение для удобного ведения списка дел.</p>
         </div>
-
-        <a class="main-footer__button button button--plus" href="add.php">Добавить задачу</a>
+        <?php
+            if($isAuthorized){
+                echo '
+                <a class="main-footer__button button button--plus" href="add.php">Добавить задачу</a>
+                ';
+            }
+        ?>
+       
 
         <div class="main-footer__social social">
             <span class="visually-hidden">Мы в соцсетях:</span>

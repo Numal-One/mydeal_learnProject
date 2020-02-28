@@ -33,10 +33,10 @@ function include_template($name, $data){
 
 function deadLineLeftHours($deadLine) {
     if ($deadLine === null) {
-        return 0;
+        return 'noDeadline';
     }
     $deadLineDate = strtotime($deadLine);
-    $nowDate = time();
+    $nowDate = strtotime('today');
     $diffTime = $deadLineDate - $nowDate;
     $secsInHour = 3600;
 
@@ -100,3 +100,89 @@ function db_get_prepare_stmt($con, $sql, $data = []) {
     return $stmt;
 }
 
+function getPostVal($name){
+    return $_POST[$name] ?? "";
+}
+
+function deadlineFieldValidation($date){
+    $todayDate = date("Y-m-d");
+    if(isset($date) && $date < $todayDate) {
+       return 'Ошибка даты. Дедлайн уже прошел';
+      }
+}
+
+
+function emailValidation($email){
+
+}
+
+
+function deadlineFilter($taskDeadlineDate, $filterTab){
+   
+    $result = false;
+    $filterTab = ($filterTab) ? intval($filterTab) : 1;
+    $today = time();
+    $deadline = strtotime($taskDeadlineDate);
+    
+    
+    switch($filterTab) {
+        case 1:
+            $result = TRUE;
+            break;
+        case 2: 
+            if(strtotime('today') == $deadline){
+                $result = TRUE;
+            } 
+            break;
+        case 3:
+            if(strtotime('tomorrow') == $deadline){
+                $result = TRUE;
+            }
+            break;
+        case 4:
+            if(strtotime('today') > $deadline && $deadline != NULL){
+                $result = TRUE;
+            }
+            break;
+    }
+
+    return $result;
+}
+
+
+function taskCompleter($taskId, $bdConnectData){
+    $con = mysqli_connect($bdConnectData['bd_path'], $bdConnectData['bd_user'], $bdConnectData['bd_pass'], $bdConnectData['bd_name']);
+    mysqli_set_charset($con, 'utf8');
+    $query = 'UPDATE `task` SET `status` = 1 WHERE `id` ='.$taskId;
+    $sqlRes = mysqli_query($con, $query);
+    // $reas = mysqli_fetch($sqlRes);
+    mysqli_close($con);
+}
+
+function mailDataConverter($dataArr){
+    $result = Array();
+    foreach ($dataArr as $taskArr) {
+        $taskName = $taskArr['taskName'];
+        $userName = $taskArr['username'];
+        $deadline = $taskArr['deadline'];
+        $email = $taskArr['email'];
+        $result[$email]['username'] = $userName;
+        $result[$email]['message'] = (isset($result[$email]['message'])) ?  $result[$email]['message'].", задача \"$taskName\" должна быть сделана $deadline" : "задача  \"$taskName\" должна быть сделана $deadline";
+    }
+    return $result;
+    // макетик массива $result, чтоб не забыть
+    // $result = array(
+    //     "email1" => array(
+    //         'username' => 'name1',
+    //         'message' => 'тут сообщение о задачах1',
+    //     ),
+    //     "email2" => array(
+    //         'username' => 'name2',
+    //         'message' => 'тут сообщение о задачах2',
+    //     ),
+    
+    // )
+}
+
+
+?>
